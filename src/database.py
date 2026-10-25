@@ -41,3 +41,24 @@ def create_demo_database(db_path: str):
     ''')
     conn.commit()
     conn.close()
+
+
+def get_schema_description(db_path: str) -> str:
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Get the list of tables
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('sqlite_sequence');")
+    tables = cursor.fetchall()
+
+    schema_description = "Database Schema:\n"
+    for table in tables:
+        table_name = table[0]
+        schema_description += f"\nTable: {table_name}\n"
+        cursor.execute(f"PRAGMA table_info({table_name});")
+        columns = cursor.fetchall()
+        for column in columns:
+            schema_description += f"  Column: {column[1]}, Type: {column[2]}\n"
+
+    conn.close()
+    return schema_description
