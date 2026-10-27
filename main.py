@@ -13,11 +13,22 @@ def main():
     parser.add_argument("--allow-write", action="store_true", help="Allow write operations in the generated SQL query.")
     args = parser.parse_args()
 
-    if args.db == "demo.sqlite3" and not os.path.exists(args.db):
+
+    if args.db == "demo.sqlite" and not os.path.exists(args.db):
         create_demo_database(args.db)
 
+    if args.db != "demo.sqlite" and not os.path.exists(args.db):
+        print(f"Database file '{args.db}' does not exist. Please provide a valid database path.")
+        return
+
+    
+
     schema = get_schema_description(args.db)
-    generated_sql = generate_sql(args.question, schema)
+    try:
+        generated_sql = generate_sql(args.question, schema)
+    except Exception as e:
+        print(f"Error generating SQL: {e}")
+        return
 
     safe = is_safe_query(generated_sql.query, args.allow_write)
     log_query(args.question, generated_sql.query,allowed = safe)
@@ -25,13 +36,20 @@ def main():
     if not safe:
         print("The generated SQL query is not safe to execute. Write operations are not allowed.")
         print(f"Generated SQL: {generated_sql.query}")
-        return  
+        return 
+    try:
+        result = execute_query(args.db, generated_sql.query, args.allow_write)
+        print("Query executed successfully. Result:")
+        if isinstance(result, list):
+            for row in result:
+                print(row)
+        else:
+            print(result)
 
-    result = execute_query(args.db, generated_sql.query, args.allow_write)
-    print("Query Result:")
-    if isinstance(result, list):
-        for row in result:
-            print(row)  
+    except Exception as e:
+        print(f"Error executing SQL: {e}")
+        return
+
 
 if __name__ == "__main__":
     main()
