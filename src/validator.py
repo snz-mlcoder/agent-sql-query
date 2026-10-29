@@ -1,3 +1,5 @@
+import re
+
 def is_safe_query(sql: str, allow_write: bool) -> bool:
 
     if sql.strip() == "":
@@ -10,5 +12,7 @@ def is_safe_query(sql: str, allow_write: bool) -> bool:
     if first_word not in allowed_starts:
         return False
     else:
-        return True
-
+        write_words = ["INSERT", "UPDATE", "DELETE", "REPLACE", "PRAGMA"]
+        if set(re.findall(r"\w+", sql.upper())) & set(write_words):
+            return False
+    return True
