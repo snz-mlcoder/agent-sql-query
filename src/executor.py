@@ -13,7 +13,7 @@ def execute_query(db_path: str, sql: str, allow_write: bool = False):
 
     try:
         cursor.execute(sql)
-        if sql.strip().upper().startswith("SELECT"):
+        if cursor.description is not None:
             result = cursor.fetchall()
         else:
             conn.commit()
