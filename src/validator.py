@@ -6,7 +6,9 @@ def is_safe_query(sql: str, allow_write: bool) -> bool:
         return True
     
     first_word = sql.strip().split()[0].upper()
-    write_operations = {"INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER"}
-    if not allow_write and first_word in write_operations:
+    allowed_starts = {"SELECT", "WITH"}    
+    if first_word not in allowed_starts:
         return False
-    return True
+    else:
+        return True
+
