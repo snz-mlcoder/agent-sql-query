@@ -44,3 +44,4 @@ def test_readonly_connection_blocks_write_even_if_validator_bypassed(tmp_path,mo
     monkeypatch.setattr("src.executor.is_safe_query", lambda sql, allow_write: True)  # Bypass the validator
     with pytest.raises(sqlite3.OperationalError):
         execute_query(db_path, "DELETE FROM customers", allow_write=False)  # This should raise an error due to the read-only connection
+
