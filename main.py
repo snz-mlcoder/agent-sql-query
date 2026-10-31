@@ -31,14 +31,16 @@ def main():
         return
 
     safe = is_safe_query(generated_sql.query, args.allow_write)
-    log_query(args.question, generated_sql.query,allowed = safe)
 
     if not safe:
+        log_query(args.question, generated_sql.query, allowed=False)
+
         print("The generated SQL query is not safe to execute. Write operations are not allowed.")
         print(f"Generated SQL: {generated_sql.query}")
         return 
     try:
         result = execute_query(args.db, generated_sql.query, args.allow_write)
+        log_query(args.question, generated_sql.query, allowed=True, executed=True, error=None)
         print("Query executed successfully. Result:")
         if isinstance(result, list):
             for row in result:
@@ -47,6 +49,7 @@ def main():
             print(result)
 
     except Exception as e:
+        log_query(args.question, generated_sql.query, allowed=True, executed=False, error=str(e))
         print(f"Error executing SQL: {e}")
         return
 
