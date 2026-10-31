@@ -33,6 +33,7 @@ uv run python main.py --db mydata.sqlite --question "..."
 
 
 # Project Structure
+```
 agent-sql-query/
 ├── main.py
 ├── src/
@@ -48,10 +49,11 @@ agent-sql-query/
 │   ├── test_executor.py
 │   ├── test_audit.py
 │   └── test_generator.py
-
 ├── pyproject.toml
 ├── .env.example
 └── README.md
+```
+
 # Safety Layers
 Generated SQL goes through three independent layers before it can change data:
 
