@@ -18,3 +18,21 @@ def test_validator_unsafe_query_with_write_allowed():
     assert is_safe_query(unsafe_query, allow_write=True) == True
 
     print("All test cases passed for is_safe_query function.")
+
+def test_validator_blocks_write_hidden_in_cte():
+    sql = "WITH x AS (SELECT 1) DELETE FROM customers"
+    assert is_safe_query(sql, allow_write=False) == False
+
+
+def test_validator_blocks_replace_into():
+    sql = "REPLACE INTO customers (name, email) VALUES ('a', 'b')"
+    assert is_safe_query(sql, allow_write=False) == False
+
+
+def test_validator_blocks_pragma():
+    sql = "PRAGMA writable_schema=1"
+    assert is_safe_query(sql, allow_write=False) == False
+
+def test_validator_blocks_empty_string():
+    sql = ""
+    assert is_safe_query(sql, allow_write=False) == False
