@@ -6,8 +6,9 @@ A CLI agent that generates SQL queries from natural language questions and execu
 - Creates a sample database if one doesn't exist
 - Generates SQL from natural language questions
 - Executes the generated SQL
-- Validates query safety before execution
-- Logs every query to an audit file
+- Validates query safety before execution (keyword whitelist + write-keyword scan)
+- Opens the database read-only unless `--allow-write` is set
+- Logs every query to an audit file, including whether it was executed and any error
 
 # Installation
 uv sync
@@ -44,22 +45,39 @@ agent-sql-query/
 │   └── schema.py
 ├── tests/
 │   ├── test_validator.py
+│   ├── test_executor.py
+│   ├── test_audit.py
 │   └── test_generator.py
+
 ├── pyproject.toml
 ├── .env.example
 └── README.md
+# Safety Layers
+Generated SQL goes through three independent layers before it can change data:
+
+1. **Validator** (`src/validator.py`): in read-only mode the statement must start with
+   `SELECT` or `WITH`, and none of `INSERT`, `UPDATE`, `DELETE`, `REPLACE`, `PRAGMA` may appear anywhere in it. This catches writes hidden inside `WITH ... DELETE`.
+   Statements starting with anything else (e.g. `CREATE`, `DROP`) are rejected by the whitelist.
+2. **Read-only connection** (`src/executor.py`): without `--allow-write`, SQLite is opened
+   with `mode=ro`, so even a query that bypasses the validator cannot modify the database.
+3. **SQLite itself**: `execute()` runs one statement at a time, so
+   `SELECT ...; DROP TABLE ...` is rejected by the driver.
+
 
 # Known Limitations
-`is_safe_query` only checks the first word of the generated SQL statement. If the model
-produces multiple statements separated by a semicolon (e.g. `SELECT * FROM users; DROP TABLE users;`),
-the second, destructive statement will not be detected, since only the first word is inspected.
+- The write-keyword scan is conservative: a harmless query containing a write keyword as text (e.g. `WHERE name = 'delete'`) is rejected.
+- Queries starting with a parenthesis, e.g. `(SELECT ...)`, are rejected.
+- With `--allow-write`, no restriction applies to the generated SQL.
+- Text comparison in SQLite is case-sensitive, so a model-generated `country = 'Usa'`
+  will not match `'USA'`. Result quality depends on the model.
+- Older entries in `audit_log.jsonl` lack the `executed` and `error` fields.
 
 # Tests
 uv run pytest
 
 # Future Improvements
-- Use a proper SQL parser (e.g. `sqlparse`) instead of a first-word check, to detect
-  multi-statement injection attempts
+- Use a proper SQL parser (e.g. `sqlparse`) instead of keyword scanning, to avoid false positives on string literals
+- Separate audit logging from the execution `try` block, so a logging failure cannot be recorded as an SQL error
 - Support other database engines (PostgreSQL, MySQL), not just SQLite
 - Add an interactive chat mode, like the original sample agent
 - Allow exporting query results to CSV/JSON
